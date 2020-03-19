@@ -23,13 +23,20 @@ public class Primitive3D : MonoBehaviour
     private CollisionHandler collisionHandler;
     public bool IsCollisionChecked { get; set; }
 
-    public bool IsValidPlacement { get; set; }
-
+    public bool IsValidPlacement
+    {
+        get
+        {
+            return CollisionCount == 0;
+        }
+    }
+    public int CollisionCount { get; set; }
 
     private Material[] lightMaterials = new Material[Solid3D.LIGHTING.LIST_LENGTH];
 
 
     public Solid3D ParentSolid { get; set; }
+    public Face2D SelectedFace { get; set; }
 
     private void Awake()
     {
@@ -44,6 +51,7 @@ public class Primitive3D : MonoBehaviour
         lightMaterials[Solid3D.LIGHTING.DELETE_MARK] = LightDeleteMark;
         lightMaterials[Solid3D.LIGHTING.DELETE_SUB] = LightDeleteSub;
 
+        CollisionCount = 0;
         IsCollisionChecked = false;
         collisionHandler = GetComponentInChildren<CollisionHandler>();
         if (collisionHandler != null)
@@ -67,19 +75,20 @@ public class Primitive3D : MonoBehaviour
     }
 
 
-    public Face2D GetFaceByNumberOfSides(int sides)
+    public void SelectFaceByNumberOfSides(int sides)
     {
         foreach (Face2D face in allFaces)
         {
             if (face.sides == sides)
             {
-                return face;
+                SelectedFace = face;
+                return;
             }
         }
-        return null;
+        SelectedFace = null;
     }
 
-    public Face2D GetFaceByNormal(Vector3 normal)
+    public void SelectFaceByNormal(Vector3 normal)
     {
         Face2D result = null;
         float angle = 181;
@@ -91,32 +100,72 @@ public class Primitive3D : MonoBehaviour
                 angle = Vector3.Angle(normal, face.Normal);
             }
         }
-        return result;
+        SelectedFace = result;
     }
 
-    public Quaternion GetRotationToClosestFace(Face2D start, Vector3 rotationAxis)
+    public void RotateToClosestFace(Vector3 rotationAxis)
     {
-        Face2D closestFace = null;
-        foreach (Face2D face in allFaces)
+        Quaternion closestRotation = Quaternion.identity;
+        Vector3 closestAxis = Vector3.zero;
+        foreach(Quaternion rotation in SelectedFace.ValidRotations)
         {
-            if (face != start && face.sides == start.sides &&
-                (Vector3.Angle(Vector3.Cross(start.Normal, face.Normal), rotationAxis) < COMMON.INPUT.ROTATION_AXIS_THRESHOLD) ||
-                Vector3.Angle(start.Normal, face.Normal) == 180)
-            {
-                if (closestFace == null || Vector3.Angle(start.Normal, closestFace.Normal) > Vector3.Angle(start.Normal, face.Normal))
+            rotation.ToAngleAxis(out float angle, out Vector3 axis);
+            if (closestAxis == Vector3.zero) {
+                if(Vector3.Angle(axis, rotationAxis) < MainCamera.INPUT.ROTATION_AXIS_THRESHOLD)
                 {
-                    closestFace = face;
+                    closestAxis = axis;
+                    closestRotation = rotation;
                 }
             }
+            else if(Vector3.Angle(axis, rotationAxis) < Vector3.Angle(closestAxis, rotationAxis))
+            {
+                closestAxis = axis;
+                closestRotation = rotation; 
+            }
         }
-        if (Vector3.Angle(start.Normal, closestFace.Normal) == 180)
+
+        if(closestRotation == Quaternion.identity)
         {
-            return Quaternion.AngleAxis(180, rotationAxis);
+            if(Vector3.Angle(SelectedFace.Normal, rotationAxis) < MainCamera.INPUT.ROTATION_AXIS_THRESHOLD)
+            {
+                StartCoroutine(RotationWithAnimation(Quaternion.AngleAxis(SelectedFace.SymmetricRotation, SelectedFace.Normal))); 
+            }
+            else if (180 - Vector3.Angle(SelectedFace.Normal, rotationAxis) < MainCamera.INPUT.ROTATION_AXIS_THRESHOLD)
+            {
+                StartCoroutine(RotationWithAnimation(Quaternion.AngleAxis(SelectedFace.SymmetricRotation, -SelectedFace.Normal)));
+            }
+            else
+            {
+                // no valid rotation
+            }
         }
         else
         {
-            return Quaternion.FromToRotation(start.Normal, closestFace.Normal);
+            StartCoroutine(RotationWithAnimation(closestRotation));
         }
+
+        
+    }
+
+    private IEnumerator RotationWithAnimation(Quaternion rotation)
+    {
+        Vector3 originalFaceNormal = SelectedFace.Normal;
+
+        rotation.ToAngleAxis(out float angle, out Vector3 axis);
+        float lastAngle = 0;
+        float currentAngle = 0;
+        float time = 0f;
+        while (time <= 1.0f)
+        {
+            time += 0.05f;
+            currentAngle = COMMON.MATHFUNCTIONS.SquaredSmooth(0, angle, time);
+            ParentSolid.transform.RotateAround(transform.position, axis, currentAngle - lastAngle);
+            lastAngle = currentAngle;
+            yield return null;
+        }
+        SelectFaceByNormal(originalFaceNormal);
+        ParentSolid.CheckPreviewValid();
+        LevelManager.Current.InputLocked = false;
     }
 
     public void SetLight(int materialIndex)

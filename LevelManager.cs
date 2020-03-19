@@ -8,7 +8,6 @@ public class LevelManager : MonoBehaviour
     public static LevelManager Current { get; private set; }
     
     private Solid3D previewSolid = null;
-    private Face2D previewSolidSelectedFace = null;
     private Face2D selectedFace = null;
     private FaceSelector activeFaceSelector = null;
    
@@ -33,7 +32,6 @@ public class LevelManager : MonoBehaviour
                 if(previewSolid != null)
                 {
                     Destroy(previewSolid.gameObject);
-                    previewSolidSelectedFace = null;
                 }
                 if(activeFaceSelector != null)
                 {
@@ -71,12 +69,12 @@ public class LevelManager : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.UpArrow))
             {
                 InputLocked = true;
-                StartCoroutine(previewSolid.ApplyRotationWithAnimation(Quaternion.AngleAxis(360/previewSolidSelectedFace.sides, previewSolidSelectedFace.Normal)));
+                previewSolid.ActivePrimitive.RotateToClosestFace(Vector3.Cross(Vector3.up, MainCamera.Current.transform.forward));
             }
-            else if (Input.GetKeyDown(KeyCode.RightArrow))
+            else if (Input.GetKeyDown(KeyCode.LeftArrow))
             {
                 InputLocked = true;
-                StartCoroutine(previewSolid.ApplyRotationWithAnimation(previewSolid.ActivePrimitive.GetRotationToClosestFace(previewSolidSelectedFace, Vector3.Cross(previewSolidSelectedFace.Normal, Vector3.up))));
+                previewSolid.ActivePrimitive.RotateToClosestFace(Vector3.up);
             }
         }
     }
@@ -148,9 +146,17 @@ public class LevelManager : MonoBehaviour
             {
                 if (face.ParentPrimitive.ParentSolid == previewSolid)
                 {
-                    if (previewSolid.IsCollisionChecked && previewSolid.IsValidPlacement)
+                    if (face.ParentPrimitive = previewSolid.ActivePrimitive)
                     {
-                        ConfirmOrCancelPreviewSolid(true);
+                        if (previewSolid.IsCollisionChecked && previewSolid.IsValidPlacement)
+                        {
+                            ConfirmOrCancelPreviewSolid(true);
+                        }
+                    }
+                    else
+                    {
+                        previewSolid.ActivePrimitive = face.ParentPrimitive;
+                        // TODO: other primitive doesn't have a valid face?
                     }
                 }
                 else
@@ -172,17 +178,16 @@ public class LevelManager : MonoBehaviour
 
         previewSolid = Instantiate(ReadySolid.gameObject).GetComponent<Solid3D>();
         previewSolid.SetMode(Solid3D.MODE.PREVIEW);
-        previewSolidSelectedFace = previewSolid.GetFaceByNumberOfSides(selectedFace.sides);
+        previewSolid.SelectFaceByNumberOfSides(selectedFace.sides);
 
-        if (previewSolidSelectedFace == null)
+        if (previewSolid.ActivePrimitive == null)
         {
             Destroy(previewSolid.gameObject);
             // TODO: no valid face
         }
         else
         {
-            previewSolid.ActivePrimitive = previewSolidSelectedFace.ParentPrimitive;
-            previewSolid.AlignToFace(previewSolidSelectedFace, selectedFace);
+            previewSolid.AlignToSelectedFace(selectedFace);
             previewSolid.ParentButton = ReadySolid.ParentButton;
         }
     }
@@ -210,7 +215,6 @@ public class LevelManager : MonoBehaviour
             }
 
             previewSolid = null;
-            previewSolidSelectedFace = null;
             selectedFace = null;
 
 
@@ -224,7 +228,6 @@ public class LevelManager : MonoBehaviour
             Destroy(previewSolid.gameObject);
         }
         previewSolid = null;
-        previewSolidSelectedFace = null;
     }
 
 

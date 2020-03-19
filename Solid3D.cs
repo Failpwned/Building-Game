@@ -42,7 +42,19 @@ public class Solid3D : MonoBehaviour
         }
     }
 
-    public bool IsValidPlacement { get; private set; }
+    private bool isValidPlacement;
+    public bool IsValidPlacement
+    {
+        get
+        {
+            return isValidPlacement;
+        }
+        set
+        {
+            isValidPlacement = value;
+            TogglePreviewValid(isValidPlacement);
+        }
+    }
 
     private bool isPowered;
     public bool IsPowered
@@ -101,61 +113,41 @@ public class Solid3D : MonoBehaviour
     }
 
 
-
-
-    public void AlignToFace(Face2D selfFace, Face2D targetFace)
+    public void AlignToSelectedFace(Face2D targetFace)
     {
-        ApplyRotation(Quaternion.FromToRotation(selfFace.Normal, -targetFace.Normal)); // Align Normals
-        if (Vector3.Angle(selfFace.Rotation, targetFace.Rotation) == 180)
+        if (ActivePrimitive != null && ActivePrimitive.SelectedFace != null)
         {
-            ApplyRotation(Quaternion.AngleAxis(180, selfFace.Normal)); // 180 degree rotation forced to rotate around normals
+            ApplyRotation(Quaternion.FromToRotation(ActivePrimitive.SelectedFace.Normal, -targetFace.Normal)); // Align Normals
+            if (Vector3.Angle(ActivePrimitive.SelectedFace.Rotation, targetFace.Rotation) == 180)
+            {
+                ApplyRotation(Quaternion.AngleAxis(180, ActivePrimitive.SelectedFace.Normal)); // 180 degree rotation forced to rotate around normals
+            }
+            else
+            {
+                ApplyRotation(Quaternion.FromToRotation(ActivePrimitive.SelectedFace.Rotation, targetFace.Rotation)); // Align Rotation. 
+            }
+            transform.position = targetFace.transform.position - ActivePrimitive.SelectedFace.transform.position; 
         }
-        else
-        {
-            ApplyRotation(Quaternion.FromToRotation(selfFace.Rotation, targetFace.Rotation)); // Align Rotation. 
-        }
-
-
-        transform.position = targetFace.transform.position - selfFace.transform.position;
     }
 
-    public void ApplyRotation(Quaternion rotation)
+    private void ApplyRotation(Quaternion rotation)
     {
         rotation.ToAngleAxis(out float angle, out Vector3 axis);
         transform.RotateAround(ActivePrimitive.transform.position, axis, angle);
     }
 
-    // TODO: Fix this
-    public IEnumerator ApplyRotationWithAnimation(Quaternion rotation)
-    { 
-        rotation.ToAngleAxis(out float angle, out Vector3 axis);
-        float lastAngle = 0;
-        float currentAngle = 0;
-        float time = 0f;
-        while(time <= 1.0f)
-        {
-            time += 0.05f;
-            currentAngle = COMMON.MATHFUNCTIONS.SquaredSmooth(0, angle, time);
-            transform.RotateAround(ActivePrimitive.transform.position, axis, currentAngle - lastAngle);
-            lastAngle = currentAngle;
-            yield return null;
-        }
-        CheckPreviewValid();
-        LevelManager.Current.InputLocked = false;
-    }
-
-    public Face2D GetFaceByNumberOfSides(int sides)
+    public void SelectFaceByNumberOfSides(int sides)
     {
-        Face2D foundSide = null;
         foreach(Primitive3D primitive in childPrimitives)
         {
-            foundSide = primitive.GetFaceByNumberOfSides(sides);
-            if(foundSide != null)
+            primitive.SelectFaceByNumberOfSides(sides);
+            if(primitive.SelectedFace != null)
             {
-                return foundSide;
+                ActivePrimitive = primitive;
+                return;
             }
         }
-        return null;
+        ActivePrimitive = null;
     }
 
     private void SetLight(int materialIndex)
@@ -216,12 +208,10 @@ public class Solid3D : MonoBehaviour
         {
             if (!primitive.IsValidPlacement)
             {
-                TogglePreviewValid(false);
                 IsValidPlacement = false;
                 return;
             }
         }
-        TogglePreviewValid(true);
         IsValidPlacement = true;
     }
 
