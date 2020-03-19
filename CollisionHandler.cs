@@ -21,12 +21,12 @@ public class CollisionHandler : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        ParentPrimitive.IsValidPlacement = false;
+        ParentPrimitive.CollisionCount++;
     }
 
     private void OnTriggerExit(Collider other)
     {
-        ParentPrimitive.IsValidPlacement = true;
+        ParentPrimitive.CollisionCount--;
     }
 
     private void FixedUpdate()
