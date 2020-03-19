@@ -27,15 +27,16 @@ public class MainMenu : MonoBehaviour
 
     private IEnumerator LayoutTransition(GameObject newLayout)
     {
+        float canvasWidth = transform.parent.gameObject.GetComponent<RectTransform>().rect.width;
+
         RectTransform currentRectTransform = GetComponent<RectTransform>();
         float oldStartPoint = currentRectTransform.anchoredPosition.x;
-        float oldEndPoint = currentRectTransform.anchoredPosition.x - currentRectTransform.rect.width;
+        float oldEndPoint = currentRectTransform.anchoredPosition.x - canvasWidth;
 
-        GameObject newLayoutObject = Instantiate(newLayout);
-        newLayout.GetComponent<CanvasGroup>().interactable = false;
-        newLayoutObject.transform.SetParent(transform.parent);
+        GameObject newLayoutObject = Instantiate(newLayout, transform.parent);
+        newLayoutObject.GetComponent<CanvasGroup>().interactable = false;
         RectTransform newRectTransform = newLayoutObject.GetComponent<RectTransform>();
-        float newStartPoint = newRectTransform.rect.width;
+        float newStartPoint = canvasWidth;
         newRectTransform.anchoredPosition = new Vector2(newStartPoint, 0);
 
         float time = 0f;
@@ -46,7 +47,7 @@ public class MainMenu : MonoBehaviour
             time += 0.01f;
             yield return null;
         }
-        newLayout.GetComponent<CanvasGroup>().interactable = true;
+        newLayoutObject.GetComponent<CanvasGroup>().interactable = true;
         Destroy(gameObject);
     }
 
