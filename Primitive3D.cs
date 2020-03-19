@@ -9,6 +9,9 @@ public class Primitive3D : MonoBehaviour
     public Material LightDeleteMark;
     public Material LightDeleteSub;
 
+    public Material PreviewValid;
+    public Material PreviewInvalid;
+
     private HashSet<Face2D> allFaces = new HashSet<Face2D>();
 
     // Modes
@@ -19,7 +22,8 @@ public class Primitive3D : MonoBehaviour
     // Collision
     private CollisionHandler collisionHandler;
     public bool IsCollisionChecked { get; set; }
-    public bool IsIntersecting { get; set; }
+
+    public bool IsValidPlacement { get; set; }
 
 
     private Material[] lightMaterials = new Material[Solid3D.LIGHTING.LIST_LENGTH];
@@ -40,7 +44,6 @@ public class Primitive3D : MonoBehaviour
         lightMaterials[Solid3D.LIGHTING.DELETE_MARK] = LightDeleteMark;
         lightMaterials[Solid3D.LIGHTING.DELETE_SUB] = LightDeleteSub;
 
-        IsIntersecting = false;
         IsCollisionChecked = false;
         collisionHandler = GetComponentInChildren<CollisionHandler>();
         if (collisionHandler != null)
@@ -135,10 +138,6 @@ public class Primitive3D : MonoBehaviour
             case Solid3D.MODE.PREVIEW:
                 ToggleMeshRenderers(defaultObject, false);
                 ToggleMeshRenderers(previewObject, true);
-                break;
-            case Solid3D.MODE.COLLIDER:
-                ToggleMeshRenderers(defaultObject, false);
-                ToggleMeshRenderers(previewObject, false);
                 collisionHandler.GetComponent<Collider>().isTrigger = true;
                 break;
         }
@@ -149,6 +148,24 @@ public class Primitive3D : MonoBehaviour
         foreach (MeshRenderer meshRenderer in root.GetComponentsInChildren<MeshRenderer>())
         {
             meshRenderer.enabled = enabled;
+        }
+    }
+
+    public void TogglePreviewValid(bool isValid)
+    {
+        foreach (Transform childTransform in previewObject.transform)
+        {
+            Material[] materials = childTransform.gameObject.GetComponent<Renderer>().materials;
+            if (isValid)
+            {
+                materials[0] = PreviewValid;
+            }
+            else
+            {
+                materials[0] = PreviewInvalid;
+            }
+
+            childTransform.gameObject.GetComponent<Renderer>().materials = materials;
         }
     }
 }

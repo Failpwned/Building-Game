@@ -108,6 +108,8 @@ public class LevelManager : MonoBehaviour
 
     public void SelectFace(Face2D face)
     {
+        MainCamera.Current.LookTarget = face.transform.position;
+
         if (DeleteMode)
         {
             if(face.ParentPrimitive == markedDeleteSolid)
@@ -146,7 +148,10 @@ public class LevelManager : MonoBehaviour
             {
                 if (face.ParentPrimitive.ParentSolid == previewSolid)
                 {
-                    ConfirmOrCancelPreviewSolid(true);
+                    if (previewSolid.IsCollisionChecked && previewSolid.IsValidPlacement)
+                    {
+                        ConfirmOrCancelPreviewSolid(true);
+                    }
                 }
                 else
                 {
@@ -166,42 +171,23 @@ public class LevelManager : MonoBehaviour
         }
 
         previewSolid = Instantiate(ReadySolid.gameObject).GetComponent<Solid3D>();
-        previewSolid.SetMode(Solid3D.MODE.COLLIDER);
+        previewSolid.SetMode(Solid3D.MODE.PREVIEW);
+        previewSolidSelectedFace = previewSolid.GetFaceByNumberOfSides(selectedFace.sides);
 
-        if(previewSolid.GetFaceByNumberOfSides(selectedFace.sides) == null)
+        if (previewSolidSelectedFace == null)
         {
             Destroy(previewSolid.gameObject);
             // TODO: no valid face
         }
         else
         {
-            StartCoroutine(PreviewSolidCollisionCheck());
-        }
-    }
-
-    private IEnumerator PreviewSolidCollisionCheck()
-    {
-        previewSolidSelectedFace = previewSolid.GetFaceByNumberOfSides(selectedFace.sides);
-        previewSolid.ActivePrimitive = previewSolidSelectedFace.ParentPrimitive;
-        previewSolid.AlignToFace(previewSolidSelectedFace, selectedFace);
-        previewSolid.transform.localScale = new Vector3(0.99f, 0.99f, 0.99f);
-
-        while(!previewSolid.IsCollisionChecked)
-        {
-            yield return null;
-        }
-        if (previewSolid.IsIntersecting)
-        {
-            Destroy(previewSolid.gameObject);
-        }
-        else
-        {
-            previewSolid.transform.localScale = new Vector3(1, 1, 1);
-            previewSolid.SetMode(Solid3D.MODE.PREVIEW);
+            previewSolid.ActivePrimitive = previewSolidSelectedFace.ParentPrimitive;
+            previewSolid.AlignToFace(previewSolidSelectedFace, selectedFace);
             previewSolid.ParentButton = ReadySolid.ParentButton;
         }
-
     }
+
+    
 
     private void ConfirmOrCancelPreviewSolid(bool isConfirmed)
     {

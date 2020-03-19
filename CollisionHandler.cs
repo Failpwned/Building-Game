@@ -19,21 +19,29 @@ public class CollisionHandler : MonoBehaviour
         
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
-        ParentPrimitive.IsIntersecting = true;
+        ParentPrimitive.IsValidPlacement = false;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        ParentPrimitive.IsValidPlacement = true;
     }
 
     private void FixedUpdate()
     {
-        
-        if (collisionCheckCounter >= 2)
+        if (!ParentPrimitive.IsCollisionChecked)
         {
-            ParentPrimitive.IsCollisionChecked = true;
-        }
-        else
-        {
-            collisionCheckCounter += 1;
+            if (collisionCheckCounter >= 2)
+            {
+                ParentPrimitive.IsCollisionChecked = true;
+                ParentPrimitive.ParentSolid.CheckPreviewValid();
+            }
+            else
+            {
+                collisionCheckCounter += 1;
+            } 
         }
     }
 }

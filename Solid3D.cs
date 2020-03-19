@@ -18,7 +18,6 @@ public class Solid3D : MonoBehaviour
     {
         public const int DEFAULT = 0;
         public const int PREVIEW = 1;
-        public const int COLLIDER = 2;
     }
 
 
@@ -43,20 +42,7 @@ public class Solid3D : MonoBehaviour
         }
     }
 
-    public bool IsIntersecting
-    {
-        get
-        {
-            foreach (Primitive3D primitive in childPrimitives)
-            {
-                if (!primitive.IsIntersecting)
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-    }
+    public bool IsValidPlacement { get; private set; }
 
     private bool isPowered;
     public bool IsPowered
@@ -154,7 +140,7 @@ public class Solid3D : MonoBehaviour
             lastAngle = currentAngle;
             yield return null;
         }
-
+        CheckPreviewValid();
         LevelManager.Current.InputLocked = false;
     }
 
@@ -180,6 +166,13 @@ public class Solid3D : MonoBehaviour
         }
     }
 
+    private void TogglePreviewValid(bool isValid)
+    {
+        foreach (Primitive3D primitive in childPrimitives)
+        {
+            primitive.TogglePreviewValid(isValid);
+        }
+    }
 
     public void SetMode(int mode)
     {
@@ -216,4 +209,20 @@ public class Solid3D : MonoBehaviour
             }
         }
     }
+
+    public void CheckPreviewValid()
+    {
+        foreach (Primitive3D primitive in childPrimitives)
+        {
+            if (!primitive.IsValidPlacement)
+            {
+                TogglePreviewValid(false);
+                IsValidPlacement = false;
+                return;
+            }
+        }
+        TogglePreviewValid(true);
+        IsValidPlacement = true;
+    }
+
 }
