@@ -9,11 +9,6 @@ public static class COMMON
         public const string UI_BUTTON = "UI Button";
     }
 
-    public static class INPUT
-    {
-        public const int ROTATION_AXIS_THRESHOLD = 30; // how close a valid rotation axis needs to be to the user inputted rotation axis in order to be considered
-    }
-
     public static class MATHFUNCTIONS
     {
         public static float SquaredSmooth(float startValue, float endValue, float time)

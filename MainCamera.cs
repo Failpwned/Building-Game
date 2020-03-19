@@ -13,6 +13,7 @@ public class MainCamera : MonoBehaviour
         public const float MIN_LOOK_DISTANCE = 6f;
         public const float ZOOM_SPEED = 0.001f;
         public const float ROTATION_SPEED = 0.001f;
+        public const int ROTATION_AXIS_THRESHOLD = 45; // how close a valid rotation axis needs to be to the user inputted rotation axis in order to be considered
     }
 
     private bool isDragging;
@@ -46,7 +47,6 @@ public class MainCamera : MonoBehaviour
                     StartCoroutine(SwitchLookTargets(lookTarget));
                 }
             }
-            print(lookTarget);
         }
     }
 
@@ -108,7 +108,8 @@ public class MainCamera : MonoBehaviour
                                 if (Physics.Raycast(ray, out RaycastHit hit))
                                 {
                                     Primitive3D hitPrimitive = hit.collider.gameObject.GetComponent<CollisionHandler>().ParentPrimitive;
-                                    LevelManager.Current.SelectFace(hitPrimitive.GetFaceByNormal(hit.normal));
+                                    hitPrimitive.SelectFaceByNormal(hit.normal);
+                                    LevelManager.Current.SelectFace(hitPrimitive.SelectedFace);
                                 }
                             }
                             isDragging = false;
@@ -175,7 +176,8 @@ public class MainCamera : MonoBehaviour
                         if (Physics.Raycast(ray, out RaycastHit hit))
                         {
                             Primitive3D hitPrimitive = hit.collider.gameObject.GetComponent<CollisionHandler>().ParentPrimitive;
-                            LevelManager.Current.SelectFace(hitPrimitive.GetFaceByNormal(hit.normal));
+                            hitPrimitive.SelectFaceByNormal(hit.normal);
+                            LevelManager.Current.SelectFace(hitPrimitive.SelectedFace);
                         }
                     }
                 }
